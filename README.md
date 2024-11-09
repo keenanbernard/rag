@@ -3,6 +3,22 @@
 
 This project demonstrates a **Retrieval-Augmented Generation (RAG)** pipeline for answering questions from a given PDF document using Python, LangChain, and OpenAI's GPT model.
 
+RAG stands for Retrieval-Augmented Generation. It is a framework designed to enhance the capabilities of language models by combining retrieval-based techniques with generative language models.
+
+---
+
+## How RAG Works: 
+
+Retrieval:
+A retriever fetches relevant information (e.g., from a database, documents, or embeddings) based on a query.
+The retriever uses techniques like semantic search (e.g., vector similarity) to find the most relevant chunks of data.
+
+Augmented Generation:
+The retrieved information is passed as context to a generative model (like GPT-4) to generate a response.
+The generative model uses the retrieved data to produce more accurate, contextually aware answers.
+
+---
+
 ## Features
 
 - Extracts text from PDF files.
@@ -85,4 +101,4 @@ This project demonstrates a **Retrieval-Augmented Generation (RAG)** pipeline fo
 
 ## License
 
-This project is licensed under the MIT License. See the `LICENSE` file for details.
+This project is licensed under the APACHE License. See the `LICENSE` file for details.
