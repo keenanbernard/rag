@@ -54,7 +54,7 @@ def answer_question(chroma_store, question):
 
 if __name__ == "__main__":
     # Absolute path to the PDF file
-    pdf_path = "./CBA.pdf"
+    pdf_path = "policies/CBA.pdf"
 
     # Ensure the file exists
     if not os.path.exists(pdf_path):
