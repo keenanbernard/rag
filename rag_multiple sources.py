@@ -36,9 +36,20 @@ def split_text_into_chunks(text, chunk_size=1000, chunk_overlap=200):
     return splitter.split_text(text)
 
 # Step 3: Embed the text and store with Chroma
-def create_chroma_store(text_chunks):
+def create_chroma_store_from_policies(directory_path):
     embeddings = OpenAIEmbeddings()
-    chroma_store = Chroma.from_texts(text_chunks, embeddings)
+    all_chunks = []
+
+    for filename in os.listdir(directory_path):
+        if filename.endswith(".pdf"):
+            pdf_path = os.path.join(directory_path, filename)
+            print(f"Processing {pdf_path}...")
+            pdf_text = extract_text_from_pdf(pdf_path)
+            text_chunks = split_text_into_chunks(pdf_text)
+            all_chunks.extend(text_chunks)
+
+    # Create a Chroma store with all chunks
+    chroma_store = Chroma.from_texts(all_chunks, embeddings)
     return chroma_store
 
 # Step 4: Answer questions using Retrieval-Augmented Generation
@@ -51,22 +62,17 @@ def answer_question(chroma_store, question):
     wrapped_answer = textwrap.fill(raw_answer, width=80)
     return wrapped_answer
 
-
 if __name__ == "__main__":
-    # Absolute path to the PDF file
-    pdf_path = "policies/Collective Bargaining Agreement.pdf"
+    # Path to the directory containing PDF files
+    policies_directory = "policies"
 
-    # Ensure the file exists
-    if not os.path.exists(pdf_path):
-        print(f"Error: File not found at {pdf_path}")
+    # Ensure the directory exists
+    if not os.path.exists(policies_directory):
+        print(f"Error: Directory not found at {policies_directory}")
         exit()
 
-    # Extract and process the text
-    pdf_text = extract_text_from_pdf(pdf_path)
-    text_chunks = split_text_into_chunks(pdf_text)
-
     # Create embeddings and store in Chroma
-    chroma_store = create_chroma_store(text_chunks)
+    chroma_store = create_chroma_store_from_policies(policies_directory)
 
     # Ask questions
     while True:
