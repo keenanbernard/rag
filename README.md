@@ -85,6 +85,8 @@ The generative model uses the retrieved data to produce more accurate, contextua
 
 - [PyPDF2](https://pypi.org/project/PyPDF2/): Extract text from PDF files.
 - [LangChain](https://github.com/hwchase17/langchain): Build LLM-powered workflows.
+- [LangChain-Pinecone](https://pypi.org/project/langchain-pinecone/): Integration between LangChain and Pinecone for vector storage and retrieval.
+- [Pinecone](https://pypi.org/project/pinecone-client/): Manage vector embeddings with scalable and efficient cloud-based storage.
 - [Chroma](https://pypi.org/project/chroma/): Manage embeddings for fast retrieval.
 - [python-dotenv](https://pypi.org/project/python-dotenv/): Load environment variables from a `.env` file.
 
@@ -94,7 +96,7 @@ The generative model uses the retrieved data to produce more accurate, contextua
 
 1. **Load PDF**: Extract text using `PyPDF2`.
 2. **Text Splitting**: Split text into smaller chunks for embedding.
-3. **Embedding and Storage**: Use OpenAI embeddings with Chroma for fast text retrieval.
+3. **Embedding and Storage**: Use OpenAI embeddings with Chroma or Pinecone for fast text retrieval.
 4. **Question Answering**: Retrieve relevant chunks and generate answers with GPT-4.
 
 ---
