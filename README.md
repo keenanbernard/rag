@@ -17,6 +17,8 @@ Augmented Generation:
 The retrieved information is passed as context to a generative model (like GPT-4) to generate a response.
 The generative model uses the retrieved data to produce more accurate, contextually aware answers.
 
+![plot](./flow_charts/RAG%20Diagram.png)
+
 ---
 
 ## Features
