@@ -1,0 +1,36 @@
+sequenceDiagram
+    participant User
+    participant Script as The Program
+    participant FileProcessor as File Processor
+    participant ChunkCreator as Text Chunk Creator
+    participant KnowledgeBase as Knowledge Database
+    participant AnswerEngine as Answer Generator
+
+    User->>Script: Run the program
+    Script->>Script: Check for API Key
+    alt API Key missing
+        Script->>User: Error: API Key not set
+    else API Key exists
+        Script->>User: Ready to process files!
+    end
+
+    Script->>FileProcessor: Find and process PDF files
+    loop For each PDF file
+        FileProcessor->>Script: Extracts text from the file
+        Script->>ChunkCreator: Break text into small pieces
+        ChunkCreator->>Script: Returns text chunks
+    end
+
+    Script->>KnowledgeBase: Store chunks for later use
+    KnowledgeBase->>Script: Database is ready
+
+    loop Ask questions
+        User->>Script: Ask a question
+        Script->>KnowledgeBase: Search for relevant chunks
+        KnowledgeBase->>Script: Return useful information
+        Script->>AnswerEngine: Generate a response
+        AnswerEngine->>Script: Provide an answer
+        Script->>User: Show the answer
+    end
+
+    Note right of Script: Handles errors like missing files or incorrect inputs

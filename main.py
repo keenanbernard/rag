@@ -27,6 +27,7 @@ def extract_text_from_pdf(pdf_path):
 
 # Step 2: Split text into chunks
 def split_text_into_chunks(text, chunk_size=1000, chunk_overlap=200):
+    # Chunk size determines the maximum size of text segments; overlap ensures context continuity between chunks.
     splitter = CharacterTextSplitter(
         separator="\n",
         chunk_size=chunk_size,

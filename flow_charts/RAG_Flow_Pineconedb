@@ -1,0 +1,39 @@
+sequenceDiagram
+    participant User
+    participant Program
+    participant PDFProcessor as File Processor
+    participant ChunkCreator as Text Chunk Creator
+    participant PineconeDB as Knowledge Database
+    participant AnswerGenerator as Answer Engine
+
+    User->>Program: Run the program
+    Program->>Program: Load API keys from .env
+    alt API keys missing
+        Program->>User: Error: Missing API keys or environment
+    else API keys loaded
+        Program->>User: Ready to process files!
+    end
+
+    Program->>PineconeDB: Connect to Pinecone database
+    PineconeDB->>Program: Database connected
+
+    Program->>PDFProcessor: Read PDF files
+    loop For each PDF file
+        PDFProcessor->>Program: Extract text
+        Program->>ChunkCreator: Split text into chunks
+        ChunkCreator->>Program: Return text chunks
+        Program->>PineconeDB: Upload chunks as searchable data
+    end
+
+    Program->>User: All files processed and indexed
+
+    loop Ask questions
+        User->>Program: Ask a question
+        Program->>PineconeDB: Search for relevant information
+        PineconeDB->>Program: Return relevant text
+        Program->>AnswerGenerator: Generate a response
+        AnswerGenerator->>Program: Provide the answer
+        Program->>User: Display the answer
+    end
+
+    Note right of Program: Handles errors for missing files or invalid inputs

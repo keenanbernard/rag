@@ -26,8 +26,7 @@ pinecone_client = Pinecone(
     api_key=api_key
 )
 
-# Define Pinecone index name
-INDEX_NAME = "pdf-policies"
+INDEX_NAME = ''
 
 # Step 1: Extract text from a PDF
 def extract_text_from_pdf(pdf_path):
@@ -40,6 +39,7 @@ def extract_text_from_pdf(pdf_path):
 
 # Step 2: Split text into chunks
 def split_text_into_chunks(text, chunk_size=1000, chunk_overlap=200):
+    # Chunk size determines the maximum size of text segments; overlap ensures context continuity between chunks.
     splitter = CharacterTextSplitter(
         separator="\n",
         chunk_size=chunk_size,
@@ -49,8 +49,13 @@ def split_text_into_chunks(text, chunk_size=1000, chunk_overlap=200):
     return splitter.split_text(text)
 
 # Step 3: Create or Connect to a Pinecone Index
-def create_or_connect_pinecone_index():
+def create_or_connect_pinecone_index(directory):
     # Check if the index exists, create it if not
+    if directory == 'policies':
+        INDEX_NAME = "pdf-policies"
+    elif directory == 'products':
+        INDEX_NAME = "pdf-products"
+
     if INDEX_NAME not in [Index.name for Index in pinecone_client.list_indexes()]:
         print(f"Creating Pinecone index '{INDEX_NAME}'...")
         pinecone_client.create_index(
@@ -113,18 +118,18 @@ def answer_question(pinecone_index, question):
 
 if __name__ == "__main__":
     # Path to the directory containing PDF files
-    policies_directory = "policies"
+    directory = input(f'Which type of documents will we be referencing? (Policies or Products): ').lower()
 
     # Ensure the directory exists
-    if not os.path.exists(policies_directory):
-        print(f"Error: Directory not found at {policies_directory}")
+    if not os.path.exists(directory):
+        print(f"Error: Directory not found at {directory}")
         exit()
 
     # Create or connect to the Pinecone index
-    pinecone_index = create_or_connect_pinecone_index()
+    pinecone_index = create_or_connect_pinecone_index(directory)
 
     # Upload embeddings to Pinecone
-    upload_chunks_to_pinecone(policies_directory, pinecone_index)
+    upload_chunks_to_pinecone(directory, pinecone_index)
 
     # Ask questions
     while True:
