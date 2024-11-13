@@ -1,38 +1,35 @@
 import os
 import PyPDF2
 import textwrap
-from flask import Flask, request, jsonify
-from flask_cors import CORS
-from flask_restx import Api
 from dotenv import load_dotenv
 from langchain.text_splitter import CharacterTextSplitter
 from langchain_community.embeddings import OpenAIEmbeddings
 from langchain_community.llms import OpenAI
 from langchain.chains import RetrievalQA
 from pinecone import Pinecone, ServerlessSpec
-from langchain_pinecone import PineconeVectorStore  # Requires Python 3.11 or lower
+from langchain_pinecone import PineconeVectorStore  # requires Python 3.11 or lower
 
 # Load environment variables
 load_dotenv()
 api_key = os.getenv("PINECONE_API_KEY")
 environment = os.getenv("PINECONE_ENV")
 
-# Initialize Flask app
-app = Flask(__name__)
-CORS(app)  # Enable CORS for cross-origin requests
-api = Api(app, doc="/docs")
-
 if not api_key or not environment:
-    raise RuntimeError("Error: Missing Pinecone API Key or Environment in .env file.")
+    print("Error: Missing Pinecone API Key or Environment in .env file.")
+    exit()
+
+print("Pinecone and OpenAI API keys loaded successfully.")
 
 # Initialize Pinecone
 pinecone_client = Pinecone(api_key=api_key)
+
 INDEX_NAME = ''
+
+# Chat history
 chat_history = []  # To store previous questions and answers
 
-
+# Step 1: Extract text from a PDF
 def extract_text_from_pdf(pdf_path):
-    """Extract text from a PDF file."""
     text = ""
     with open(pdf_path, 'rb') as file:
         reader = PyPDF2.PdfReader(file)
@@ -40,9 +37,9 @@ def extract_text_from_pdf(pdf_path):
             text += page.extract_text()
     return text
 
-
+# Step 2: Split text into chunks
 def split_text_into_chunks(text, chunk_size=1000, chunk_overlap=200):
-    """Split text into chunks for embedding."""
+    # Chunk size determines the maximum size of text segments; overlap ensures context continuity between chunks.
     splitter = CharacterTextSplitter(
         separator="\n",
         chunk_size=chunk_size,
@@ -51,29 +48,32 @@ def split_text_into_chunks(text, chunk_size=1000, chunk_overlap=200):
     )
     return splitter.split_text(text)
 
-
+# Step 3: Create or Connect to a Pinecone Index
 def create_or_connect_pinecone_index(directory):
-    """Create or connect to a Pinecone index."""
     global INDEX_NAME
     INDEX_NAME = "pdf-policies" if directory == "policies" else "pdf-products"
 
     if INDEX_NAME not in [Index.name for Index in pinecone_client.list_indexes()]:
+        print(f"Creating Pinecone index '{INDEX_NAME}'...")
         pinecone_client.create_index(
             name=INDEX_NAME,
-            dimension=1536,
+            dimension=1536,  # Dimensionality of OpenAI embeddings
             metric="cosine",
             spec=ServerlessSpec(cloud="aws", region=environment)
         )
+    else:
+        print(f"Pinecone index '{INDEX_NAME}' already exists.")
+
     return pinecone_client.Index(INDEX_NAME)
 
-
+# Step 4: Embed and Upload Text Chunks to Pinecone
 def upload_chunks_to_pinecone(directory_path, index):
-    """Embed and upload text chunks to Pinecone."""
     embeddings = OpenAIEmbeddings()
 
     for filename in os.listdir(directory_path):
         if filename.endswith(".pdf"):
             pdf_path = os.path.join(directory_path, filename)
+            print(f"Processing {pdf_path}...")
             pdf_text = extract_text_from_pdf(pdf_path)
             text_chunks = split_text_into_chunks(pdf_text)
 
@@ -82,17 +82,21 @@ def upload_chunks_to_pinecone(directory_path, index):
                 vector = embeddings.embed_query(chunk)
                 index.upsert([(f"{filename}_{i}", vector, {"text": chunk})])
 
+    print(f"All embeddings uploaded to Pinecone index '{INDEX_NAME}'.")
 
+# Step 5: Answer questions using Retrieval-Augmented Generation with History
 def answer_question(pinecone_index, question):
     # Combine history and current question
     history_text = "\n".join([f"Q: {q}\nA: {a}" for q, a in chat_history])
     combined_query = f"{history_text}\nQ: {question}"
 
-    """Answer a question using the RAG pipeline."""
+    # Initialize the Pinecone vector store
     vector_store = PineconeVectorStore(
         index=pinecone_index,
         embedding=OpenAIEmbeddings()
     )
+
+    # Set up the QA chain
     qa_chain = RetrievalQA.from_chain_type(
         llm=OpenAI(),
         retriever=vector_store.as_retriever()
@@ -112,39 +116,28 @@ def answer_question(pinecone_index, question):
 
     return wrapped_answer
 
-
-# Flask Endpoints
-@app.route("/api/v1/heartbeat", methods=["GET"])
-def health_check():
-    return jsonify({"status": "healthy"}), 200
-
-
-@app.route("/api/v1/initialize", methods=["POST"])
-def initialize():
-    """Initialize the Pinecone index and upload embeddings."""
-    data = request.json
-    directory = data.get("directory")
-    if not directory or not os.path.exists(directory):
-        return jsonify({"error": f"Directory '{directory}' not found"}), 400
-
-    pinecone_index = create_or_connect_pinecone_index(directory)
-    upload_chunks_to_pinecone(directory, pinecone_index)
-    return jsonify({"message": f"Index '{INDEX_NAME}' initialized and embeddings uploaded."})
-
-
-@app.route("/api/v1/query", methods=["POST"])
-def query():
-    """Answer a question based on the embeddings."""
-    data = request.json
-    question = data.get("question")
-    if not question:
-        return jsonify({"error": "No question provided"}), 400
-
-    pinecone_index = pinecone_client.Index(INDEX_NAME)
-    answer = answer_question(pinecone_index, question)
-    return jsonify({"answer": answer})
-
-
-# Run the Flask app
+# Main Program
 if __name__ == "__main__":
-    app.run(debug=True)
+    # Path to the directory containing PDF files
+    directory = input(f'Which type of documents will we be referencing? (Policies or Products): ').lower()
+
+    # Ensure the directory exists
+    if not os.path.exists(directory):
+        print(f"Error: Directory not found at {directory}")
+        exit()
+
+    # Create or connect to the Pinecone index
+    pinecone_index = create_or_connect_pinecone_index(directory)
+
+    # Upload embeddings to Pinecone
+    upload_chunks_to_pinecone(directory, pinecone_index)
+
+    # Ask questions
+    print("\nReady to answer your questions. Type 'exit' to quit.\n")
+    while True:
+        question = input("Enter your question: ")
+        if question.lower() == "exit":
+            print("Goodbye!")
+            break
+        answer = answer_question(pinecone_index, question)
+        print(f"Answer:\n{answer}")
