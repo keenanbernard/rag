@@ -32,8 +32,8 @@ The generative model uses the retrieved data to produce more accurate, contextua
 
 ## Requirements
 
-- Python 3.8+
-- An OpenAI API key (GPT-4 or GPT-3.5 access).
+- Python 3.11+
+- An OpenAI API key (GPT-3.5 access).
 
 ---
 
@@ -99,7 +99,7 @@ The generative model uses the retrieved data to produce more accurate, contextua
 1. **Load PDF**: Extract text using `PyPDF2`.
 2. **Text Splitting**: Split text into smaller chunks for embedding.
 3. **Embedding and Storage**: Use OpenAI embeddings with Chroma or Pinecone for fast text retrieval.
-4. **Question Answering**: Retrieve relevant chunks and generate answers with GPT-4.
+4. **Question Answering**: Retrieve relevant chunks and generate answers with GPT-3.5.
 
 ---
 
